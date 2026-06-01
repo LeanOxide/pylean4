@@ -44,18 +44,28 @@ impl ProofEnvironmentPy {
         })
     }
 
-    /// Apply a tactic and return (next_state, reward, done, info).
+    /// Apply a tactic string and return (next_state, reward, done, info).
     ///
-    /// - reward: 1.0 if proof complete, 0.0 if progress, -0.1 if error
-    /// - done: True if proof complete or unrecoverable error
-    /// - info: dict with additional metadata
+    /// Convenience wrapper that dispatches to the DSL methods.
+    /// For structured access, use TacticState methods directly.
     fn step(
         &self,
         py: Python,
         state: &TacticStatePy,
         tactic: &str,
     ) -> PyResult<(TacticStatePy, f64, bool, PyObject)> {
-        let result = state.apply(py, tactic)?;
+        // Simple dispatch: only support intro and rfl via string for now
+        let result = if tactic.trim() == "rfl" {
+            state.rfl(py)?
+        } else if let Some(name) = tactic.trim().strip_prefix("intro ") {
+            state.intro(py, name.trim())?
+        } else {
+            TacticResultPy {
+                success: false,
+                error: Some(format!("unsupported tactic string: {tactic}")),
+                next_state: None,
+            }
+        };
 
         let (next_state, reward, done) = if result.success {
             let ns = result.next_state.unwrap_or_else(|| state.clone());
