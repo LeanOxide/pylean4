@@ -130,6 +130,47 @@ impl TacticStatePy {
         })
     }
 
+    // ====================================================================
+    // Pure state manipulation
+    // ====================================================================
+
+    /// Focus on the first goal, discarding all others.
+    ///
+    /// ```python
+    /// focused = state.focus()
+    /// assert focused.num_goals == 1
+    /// ```
+    fn focus(&self) -> PyResult<Self> {
+        if self.goals.is_empty() {
+            return Err(pyo3::exceptions::PyRuntimeError::new_err(
+                "no goals to focus on",
+            ));
+        }
+        Ok(TacticStatePy {
+            goals: vec![self.goals[0].clone()],
+            meta_state: self.meta_state.clone(),
+        })
+    }
+
+    /// Swap the first two goals.
+    ///
+    /// ```python
+    /// swapped = state.swap()
+    /// ```
+    fn swap(&self) -> PyResult<Self> {
+        if self.goals.len() < 2 {
+            return Err(pyo3::exceptions::PyRuntimeError::new_err(
+                "need at least 2 goals to swap",
+            ));
+        }
+        let mut new_goals = self.goals.clone();
+        new_goals.swap(0, 1);
+        Ok(TacticStatePy {
+            goals: new_goals,
+            meta_state: self.meta_state.clone(),
+        })
+    }
+
     fn __repr__(&self) -> String {
         if self.is_solved() {
             "TacticState(solved)".into()
@@ -385,6 +426,90 @@ impl ExprPy {
             let from_b = from_u.into_bound(lean).cast();
             let to_b = to_u.into_bound(lean).cast();
             let expr = leo3::meta::LeanExpr::arrow(from_b, to_b)?;
+            Ok::<_, leo3::LeanError>(expr.cast::<LeanAny>().unbind_mt())
+        });
+        match result {
+            Ok(inner) => Ok(Self { inner }),
+            Err(e) => Err(error_to_py(e)),
+        }
+    }
+
+    /// Build `@Eq ty lhs rhs` (equality proposition).
+    ///
+    /// ```python
+    /// prop = Expr.eq(nat, one, one)  # 1 = 1
+    /// ```
+    #[staticmethod]
+    fn eq(ty: &ExprPy, lhs: &ExprPy, rhs: &ExprPy) -> PyResult<Self> {
+        let ty_u = ty.inner.clone();
+        let lhs_u = lhs.inner.clone();
+        let rhs_u = rhs.inner.clone();
+        let result = leo3::with_lean(|lean| {
+            let ty_b = ty_u.into_bound(lean).cast();
+            let lhs_b = lhs_u.into_bound(lean).cast();
+            let rhs_b = rhs_u.into_bound(lean).cast();
+            let u = leo3::meta::LeanLevel::one(lean)?;
+            let levels = LeanList::cons(u.cast::<LeanAny>(), LeanList::nil(lean)?)?;
+            let expr = leo3::meta::LeanExpr::mk_eq(lean, levels, &ty_b, &lhs_b, &rhs_b)?;
+            Ok::<_, leo3::LeanError>(expr.cast::<LeanAny>().unbind_mt())
+        });
+        match result {
+            Ok(inner) => Ok(Self { inner }),
+            Err(e) => Err(error_to_py(e)),
+        }
+    }
+
+    /// Build `@Eq.refl ty val` (reflexivity proof: val = val).
+    ///
+    /// ```python
+    /// proof = Expr.eq_refl(nat, zero)  # proves 0 = 0
+    /// ```
+    #[staticmethod]
+    fn eq_refl(ty: &ExprPy, val: &ExprPy) -> PyResult<Self> {
+        let ty_u = ty.inner.clone();
+        let val_u = val.inner.clone();
+        let result = leo3::with_lean(|lean| {
+            let ty_b = ty_u.into_bound(lean).cast();
+            let val_b = val_u.into_bound(lean).cast();
+            let u = leo3::meta::LeanLevel::one(lean)?;
+            let levels = LeanList::cons(u.cast::<LeanAny>(), LeanList::nil(lean)?)?;
+            let expr = leo3::meta::LeanExpr::mk_eq_refl(lean, levels, &ty_b, &val_b)?;
+            Ok::<_, leo3::LeanError>(expr.cast::<LeanAny>().unbind_mt())
+        });
+        match result {
+            Ok(inner) => Ok(Self { inner }),
+            Err(e) => Err(error_to_py(e)),
+        }
+    }
+
+    /// Build a Nat literal expression.
+    ///
+    /// ```python
+    /// five = Expr.nat_lit(5)
+    /// ```
+    #[staticmethod]
+    fn nat_lit(n: u64) -> PyResult<Self> {
+        let result = leo3::with_lean(|lean| {
+            let lit = leo3::meta::LeanLiteral::nat(lean, n)?;
+            let expr = leo3::meta::LeanExpr::lit(lean, lit)?;
+            Ok::<_, leo3::LeanError>(expr.cast::<LeanAny>().unbind_mt())
+        });
+        match result {
+            Ok(inner) => Ok(Self { inner }),
+            Err(e) => Err(error_to_py(e)),
+        }
+    }
+
+    /// Build a String literal expression.
+    ///
+    /// ```python
+    /// hello = Expr.str_lit("hello")
+    /// ```
+    #[staticmethod]
+    fn str_lit(s: &str) -> PyResult<Self> {
+        let result = leo3::with_lean(|lean| {
+            let lit = leo3::meta::LeanLiteral::string(lean, s)?;
+            let expr = leo3::meta::LeanExpr::lit(lean, lit)?;
             Ok::<_, leo3::LeanError>(expr.cast::<LeanAny>().unbind_mt())
         });
         match result {

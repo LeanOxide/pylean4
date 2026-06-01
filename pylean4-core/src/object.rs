@@ -56,8 +56,8 @@ impl std::fmt::Display for LeanTypeTag {
 #[pyclass(name = "LeanObject")]
 #[derive(Clone)]
 pub struct LeanObject {
-    pub(crate) inner: LeanUnbound<LeanAny>,
-    pub(crate) type_tag: LeanTypeTag,
+    pub inner: LeanUnbound<LeanAny>,
+    pub type_tag: LeanTypeTag,
 }
 
 impl LeanObject {

@@ -16,7 +16,7 @@ mod module;
 mod conversion;
 mod error;
 
-pub use object::LeanObject;
+pub use object::{LeanObject, LeanTypeTag};
 pub use runtime::LeanRuntime;
 
 /// The pylean4._core Python module.

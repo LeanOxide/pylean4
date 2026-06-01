@@ -10,7 +10,7 @@ description = "Python bindings for Lean4 via leo3 — core layer"
 
 [lib]
 name = "_core"
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 leo3.workspace = true
