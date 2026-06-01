@@ -38,7 +38,10 @@ impl ProofEnvironmentPy {
     /// Reset to the initial proof state for the configured theorem.
     fn reset(&self) -> PyResult<TacticStatePy> {
         // TODO: load module, find theorem, create initial state
-        Ok(TacticStatePy {})
+        Ok(TacticStatePy {
+            goals: vec![],
+            meta_state: None,
+        })
     }
 
     /// Apply a tactic and return (next_state, reward, done, info).

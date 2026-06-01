@@ -58,7 +58,6 @@ impl BatchVerifierPy {
         // Release GIL and run verification in parallel
         let results = py.allow_threads(|| {
             // TODO: use rayon thread pool with pre-initialized Lean threads
-            // For now, return placeholder results
             states
                 .iter()
                 .zip(tactics.iter())

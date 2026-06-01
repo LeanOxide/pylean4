@@ -11,7 +11,7 @@ mod tactic_state;
 mod proof_env;
 mod pool;
 
-pub use tactic_state::TacticStatePy;
+pub use tactic_state::{TacticStatePy, TacticResultPy};
 pub use proof_env::ProofEnvironmentPy;
 pub use pool::BatchVerifierPy;
 
@@ -19,6 +19,7 @@ pub use pool::BatchVerifierPy;
 #[pymodule]
 fn _ai(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<TacticStatePy>()?;
+    m.add_class::<tactic_state::TacticResultPy>()?;
     m.add_class::<ProofEnvironmentPy>()?;
     m.add_class::<BatchVerifierPy>()?;
     Ok(())
