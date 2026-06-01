@@ -14,7 +14,7 @@ use pyo3::prelude::*;
 
 /// Stored MetaM context state (all MT-safe, lifetime-erased).
 #[derive(Clone)]
-pub(crate) struct MetaContextState {
+pub struct MetaContextState {
     pub env: LeanUnbound<LeanAny>,
     pub core_ctx: LeanUnbound<LeanAny>,
     pub core_state: LeanUnbound<LeanAny>,
@@ -39,8 +39,8 @@ pub(crate) struct MetaContextState {
 #[pyclass(name = "TacticState")]
 #[derive(Clone)]
 pub struct TacticStatePy {
-    pub(crate) goals: Vec<LeanUnbound<LeanAny>>,
-    pub(crate) meta_state: Option<MetaContextState>,
+    pub goals: Vec<LeanUnbound<LeanAny>>,
+    pub meta_state: Option<MetaContextState>,
 }
 
 #[pymethods]
