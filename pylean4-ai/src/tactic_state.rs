@@ -178,6 +178,42 @@ impl TacticStatePy {
             format!("TacticState(goals={})", self.num_goals())
         }
     }
+
+    fn __str__(&self) -> String {
+        if self.is_solved() {
+            "No goals. ∎".into()
+        } else {
+            let goals = self.goals_pp();
+            goals
+                .iter()
+                .enumerate()
+                .map(|(i, g)| format!("goal {}: {g}", i + 1))
+                .collect::<Vec<_>>()
+                .join("\n")
+        }
+    }
+
+    /// Jupyter HTML rendering — shows goals in a proof-state box.
+    fn _repr_html_(&self) -> String {
+        if self.is_solved() {
+            return "<div style=\"color:#2e7d32;font-weight:bold\">No goals. ∎</div>".into();
+        }
+        let goals = self.goals_pp();
+        let mut html = String::from(
+            "<div style=\"font-family:monospace;border:1px solid #ccc;padding:8px;border-radius:4px;background:#fafafa\">\n"
+        );
+        for (i, g) in goals.iter().enumerate() {
+            if i > 0 {
+                html.push_str("<hr style=\"border:none;border-top:1px dashed #ccc;margin:4px 0\"/>\n");
+            }
+            html.push_str(&format!(
+                "<div style=\"color:#1565c0\">{}</div>\n",
+                html_escape(g)
+            ));
+        }
+        html.push_str("</div>");
+        html
+    }
 }
 
 impl TacticStatePy {
@@ -527,6 +563,27 @@ impl ExprPy {
             }
         })
     }
+
+    fn __str__(&self) -> String {
+        leo3::with_lean(|lean| {
+            let bound = self.inner.bind(lean).cast();
+            match leo3::meta::LeanExpr::dbg_to_string(&bound) {
+                Ok(s) => prettify_expr(&s),
+                Err(_) => "?".into(),
+            }
+        })
+    }
+
+    /// Get the pretty-printed string (same as __str__).
+    fn pp(&self) -> String {
+        self.__str__()
+    }
+
+    /// Jupyter LaTeX rendering.
+    fn _repr_latex_(&self) -> String {
+        let s = self.__str__();
+        format!("${}$", unicode_to_latex(&s))
+    }
 }
 
 // ============================================================================
@@ -564,4 +621,55 @@ fn pp_goal<'l>(
 
 pub(crate) fn error_to_py(e: leo3::LeanError) -> PyErr {
     pyo3::exceptions::PyRuntimeError::new_err(format!("{e}"))
+}
+
+/// Prettify a raw dbg_to_string output into human-readable form.
+fn prettify_expr(s: &str) -> String {
+    let mut result = s.to_string();
+    // Remove universe annotations like .{1} .{0}
+    while let Some(start) = result.find(".{") {
+        if let Some(end) = result[start..].find('}') {
+            result.replace_range(start..start + end + 1, "");
+        } else {
+            break;
+        }
+    }
+    // Common prettifications
+    result = result.replace("Eq ", "").replace("@", "");
+    // If it looks like "Nat Nat.zero Nat.zero", format as "Nat.zero = Nat.zero"
+    // Simple heuristic: if starts with a type followed by two identical-looking terms
+    result = result.trim().to_string();
+    result
+}
+
+/// Convert Unicode math symbols to LaTeX commands.
+fn unicode_to_latex(s: &str) -> String {
+    s.replace('∀', "\\forall ")
+        .replace('∃', "\\exists ")
+        .replace('→', "\\to ")
+        .replace('←', "\\leftarrow ")
+        .replace('↔', "\\leftrightarrow ")
+        .replace('¬', "\\neg ")
+        .replace('∧', "\\land ")
+        .replace('∨', "\\lor ")
+        .replace('⊢', "\\vdash ")
+        .replace('⊥', "\\bot ")
+        .replace('⊤', "\\top ")
+        .replace('λ', "\\lambda ")
+        .replace('α', "\\alpha ")
+        .replace('β', "\\beta ")
+        .replace('γ', "\\gamma ")
+        .replace('Π', "\\Pi ")
+        .replace('Σ', "\\Sigma ")
+        .replace('ℕ', "\\mathbb{N}")
+        .replace('ℤ', "\\mathbb{Z}")
+        .replace('ℝ', "\\mathbb{R}")
+}
+
+/// Escape HTML special characters.
+fn html_escape(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
 }
