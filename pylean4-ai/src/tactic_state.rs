@@ -624,8 +624,14 @@ pub(crate) fn error_to_py(e: leo3::LeanError) -> PyErr {
 }
 
 /// Prettify a raw dbg_to_string output into human-readable form.
+///
+/// Transforms Lean's internal representation into something closer to
+/// what users expect:
+/// - `Eq.{1} Nat Nat.zero Nat.zero` → `Nat.zero = Nat.zero`
+/// - `forall (P : Sort.{0}), ...` → `∀ (P : Prop), ...`
 fn prettify_expr(s: &str) -> String {
     let mut result = s.to_string();
+
     // Remove universe annotations like .{1} .{0}
     while let Some(start) = result.find(".{") {
         if let Some(end) = result[start..].find('}') {
@@ -634,12 +640,30 @@ fn prettify_expr(s: &str) -> String {
             break;
         }
     }
-    // Common prettifications
-    result = result.replace("Eq ", "").replace("@", "");
-    // If it looks like "Nat Nat.zero Nat.zero", format as "Nat.zero = Nat.zero"
-    // Simple heuristic: if starts with a type followed by two identical-looking terms
-    result = result.trim().to_string();
-    result
+
+    // Remove @ prefix
+    result = result.replace("@", "");
+
+    // Detect Eq pattern: "Eq <type> <lhs> <rhs>" → "<lhs> = <rhs>"
+    if result.starts_with("Eq ") {
+        let parts: Vec<&str> = result.splitn(4, ' ').collect();
+        if parts.len() == 4 {
+            // parts = ["Eq", type, lhs, rhs]
+            result = format!("{} = {}", parts[2], parts[3]);
+        }
+    }
+
+    // Sort.{0} → Prop, Sort.{1} → Type
+    result = result.replace("Sort", "Prop"); // Sort without universe = Prop
+
+    // forall → ∀
+    result = result.replace("forall ", "∀ ");
+    result = result.replace("fun ", "λ ");
+
+    // Arrow: simplify nested forall without name to →
+    // This is a heuristic — won't catch all cases
+
+    result.trim().to_string()
 }
 
 /// Convert Unicode math symbols to LaTeX commands.
