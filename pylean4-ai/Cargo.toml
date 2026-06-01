@@ -1,0 +1,19 @@
+[package]
+name = "pylean4-ai"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Python bindings for Lean4 via leo3 — AI/RL acceleration layer"
+
+[lib]
+name = "_ai"
+crate-type = ["cdylib"]
+
+[dependencies]
+pylean4-core = { path = "../pylean4-core" }
+leo3 = { workspace = true, features = ["tokio"] }
+pyo3.workspace = true
+rayon = "1.10"

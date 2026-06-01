@@ -1,0 +1,18 @@
+[workspace]
+resolver = "2"
+members = [
+    "pylean4-core",
+    "pylean4-ai",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+authors = ["pylean4 Contributors"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/AndPuQing/pylean4.git"
+
+[workspace.dependencies]
+leo3 = { path = "../leo3/leo3", features = ["meta", "module-loading", "task"] }
+pyo3 = { version = "0.23", features = ["extension-module"] }
