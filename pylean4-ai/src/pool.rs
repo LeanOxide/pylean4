@@ -2,7 +2,6 @@
 
 use crate::tactic_state::{MetaContextState, TacticResultPy, TacticStatePy};
 use leo3::instance::LeanAny;
-use leo3::prelude::*;
 use pyo3::prelude::*;
 use rayon::prelude::*;
 
@@ -117,8 +116,6 @@ fn verify_single(state: TacticStatePy, tactic: &str) -> TacticResultPy {
     }
 
     let goals: Vec<_> = state.goals.iter().map(|g| g.clone()).collect();
-    let meta_for_result = state.meta_state.clone();
-
     // Each worker thread gets its own Lean thread context via with_lean
     let result = leo3::with_lean(|lean| {
         let mut ctx = rebuild_ctx(lean, meta);
@@ -137,19 +134,27 @@ fn verify_single(state: TacticStatePy, tactic: &str) -> TacticResultPy {
                     .into_iter()
                     .map(|g| g.cast::<LeanAny>().unbind_mt())
                     .collect();
-                Ok(new_goals)
+                let (env, core_ctx, core_state, meta_ctx, meta_state) = ctx.into_parts();
+                let meta_state = MetaContextState {
+                    env: env.cast::<LeanAny>().unbind_mt(),
+                    core_ctx: core_ctx.cast::<LeanAny>().unbind_mt(),
+                    core_state: core_state.cast::<LeanAny>().unbind_mt(),
+                    meta_ctx: meta_ctx.cast::<LeanAny>().unbind_mt(),
+                    meta_state: meta_state.cast::<LeanAny>().unbind_mt(),
+                };
+                Ok((new_goals, meta_state))
             }
             leo3::meta::tactic::TacticResult::Failure(e) => Err(format!("{e}")),
         }
     });
 
     match result {
-        Ok(new_goals) => TacticResultPy {
+        Ok((new_goals, meta_state)) => TacticResultPy {
             success: true,
             error: None,
             next_state: Some(TacticStatePy {
                 goals: new_goals,
-                meta_state: meta_for_result,
+                meta_state: Some(meta_state),
             }),
         },
         Err(msg) => TacticResultPy {

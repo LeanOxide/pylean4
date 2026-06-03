@@ -15,5 +15,6 @@ repository = "https://github.com/AndPuQing/pylean4.git"
 
 [workspace.dependencies]
 leo3 = { path = "../leo3/leo3", features = ["meta", "module-loading", "task"] }
+leo3-build-config = { path = "../leo3/leo3-build-config" }
 pyo3 = { version = "0.23", features = ["extension-module"] }
 pyo3-testing = { package = "pyo3", version = "0.23", features = ["auto-initialize"] }

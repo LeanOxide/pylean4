@@ -1,5 +1,7 @@
 from __future__ import annotations
-from ._core import LeanObject
+from ._core import Environment, LeanObject, Runtime
+
+__all__: list[str]
 
 class Expr:
     @staticmethod
@@ -25,6 +27,7 @@ class Expr:
     def str_lit(s: str) -> Expr: ...
 
 class TacticState:
+    def __init__(self) -> None: ...
     @property
     def num_goals(self) -> int: ...
     @property
@@ -43,6 +46,12 @@ class TacticResult:
     error: str | None
     next_state: TacticState | None
     def __bool__(self) -> bool: ...
+
+class MetaContext:
+    def __init__(self, env: LeanObject) -> None: ...
+    def mk_goal(self, goal_type: Expr) -> TacticState: ...
+    @property
+    def is_valid(self) -> bool: ...
 
 class ProofEnvironment:
     def __init__(self, env: LeanObject, theorem_name: str) -> None: ...

@@ -151,8 +151,7 @@ class TestProofEnvironment:
         # Build the theorem type: ∀ (P : Prop), P → P
         prop = Expr.sort(0)
         p_var = Expr.bvar(1)  # P (under two binders)
-        h_var = Expr.bvar(0)  # h (most recent binder)
-        inner = Expr.forall_("h", Expr.bvar(0), h_var)  # h : P ⊢ P
+        inner = Expr.forall_("h", Expr.bvar(0), p_var)  # h : P ⊢ P
         thm_type = Expr.forall_("P", prop, inner)
 
         # Create MetaContext and initial goal

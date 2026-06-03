@@ -19,12 +19,23 @@ mod error;
 pub use object::{LeanObject, LeanTypeTag};
 pub use runtime::LeanRuntime;
 
-/// The pylean4._core Python module.
-#[pymodule]
-fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
+/// Register the core Python classes that do not depend on the AI layer.
+pub fn register_core_base(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<LeanRuntime>()?;
     m.add_class::<LeanObject>()?;
     m.add_class::<environment::LeanEnvironmentPy>()?;
+    Ok(())
+}
+
+/// Register the standalone core Python module.
+pub fn register_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    register_core_base(m)?;
     m.add_class::<meta::MetaContextPy>()?;
     Ok(())
+}
+
+/// The pylean4._core Python module.
+#[pymodule]
+fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    register_core(m)
 }

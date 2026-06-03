@@ -6,7 +6,6 @@
 use crate::error::lean_to_py_err;
 use crate::object::{LeanObject, LeanTypeTag};
 use leo3::instance::LeanAny;
-use leo3::prelude::*;
 use leo3::LeanUnbound;
 use pyo3::prelude::*;
 

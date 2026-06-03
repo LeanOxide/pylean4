@@ -7,9 +7,25 @@ Two layers:
 
 __version__ = "0.1.0"
 
-# Re-export core types
-from ._core import Runtime, LeanObject, Environment, MetaContext
-from ._ai import TacticState, TacticResult, ProofEnvironment, BatchVerifier, Expr
+from pathlib import Path
+
+from ._runtime import preload_lean_runtime
+
+preload_lean_runtime(Path(__file__).parent)
+
+# Re-export native types. The _ai extension registers both the core and AI
+# layers so Lean's process-global runtime is loaded only once.
+from ._ai import (
+    Runtime,
+    LeanObject,
+    Environment,
+    MetaContext,
+    TacticState,
+    TacticResult,
+    ProofEnvironment,
+    BatchVerifier,
+    Expr,
+)
 
 __all__ = [
     # Core

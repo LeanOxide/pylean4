@@ -45,6 +45,14 @@ pub struct TacticStatePy {
 
 #[pymethods]
 impl TacticStatePy {
+    #[new]
+    fn new() -> Self {
+        Self {
+            goals: Vec::new(),
+            meta_state: None,
+        }
+    }
+
     /// Number of remaining goals.
     #[getter]
     pub fn num_goals(&self) -> usize {
@@ -242,8 +250,6 @@ impl TacticStatePy {
 
         let goals: Vec<_> = self.goals.iter().map(|g| g.clone()).collect();
         let meta = meta.clone();
-        let meta_for_result = self.meta_state.clone();
-
         let result = py.allow_threads(move || {
             leo3::with_lean(|lean| {
                 let mut ctx = rebuild_ctx(lean, meta);
@@ -262,7 +268,15 @@ impl TacticStatePy {
                             .into_iter()
                             .map(|g| g.cast::<LeanAny>().unbind_mt())
                             .collect();
-                        Ok(Ok(new_goals))
+                        let (env, core_ctx, core_state, meta_ctx, meta_state) = ctx.into_parts();
+                        let meta_state = MetaContextState {
+                            env: env.cast::<LeanAny>().unbind_mt(),
+                            core_ctx: core_ctx.cast::<LeanAny>().unbind_mt(),
+                            core_state: core_state.cast::<LeanAny>().unbind_mt(),
+                            meta_ctx: meta_ctx.cast::<LeanAny>().unbind_mt(),
+                            meta_state: meta_state.cast::<LeanAny>().unbind_mt(),
+                        };
+                        Ok(Ok((new_goals, meta_state)))
                     }
                     leo3::meta::tactic::TacticResult::Failure(e) => Ok(Err(e)),
                 }
@@ -270,12 +284,12 @@ impl TacticStatePy {
         });
 
         match result {
-            Ok(Ok(new_goals)) => Ok(TacticResultPy {
+            Ok(Ok((new_goals, meta_state))) => Ok(TacticResultPy {
                 success: true,
                 error: None,
                 next_state: Some(TacticStatePy {
                     goals: new_goals,
-                    meta_state: meta_for_result,
+                    meta_state: Some(meta_state),
                 }),
             }),
             Ok(Err(e)) | Err(e) => Ok(TacticResultPy {

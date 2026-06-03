@@ -6,6 +6,9 @@
 use pyo3::prelude::*;
 use std::sync::Once;
 
+use crate::object::{LeanObject, LeanTypeTag};
+use leo3::instance::LeanAny;
+
 static INIT: Once = Once::new();
 
 /// Manages the Lean4 runtime lifecycle.
@@ -40,6 +43,19 @@ impl LeanRuntime {
     #[getter]
     fn is_initialized(&self) -> bool {
         self.initialized
+    }
+
+    /// Create an empty Lean environment.
+    fn empty_environment(&self) -> PyResult<LeanObject> {
+        let result = leo3::with_lean(|lean| {
+            let env = leo3::meta::LeanEnvironment::empty(lean, 0)?;
+            Ok::<_, leo3::LeanError>(env.cast::<LeanAny>().unbind_mt())
+        });
+
+        match result {
+            Ok(inner) => Ok(LeanObject::new(inner, LeanTypeTag::Environment)),
+            Err(e) => Err(crate::error::lean_to_py_err(e)),
+        }
     }
 
     fn __repr__(&self) -> String {

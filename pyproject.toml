@@ -24,5 +24,6 @@ dev = ["pytest>=7.0", "pytest-benchmark"]
 
 [tool.maturin]
 features = ["pyo3/extension-module"]
+manifest-path = "pylean4-ai/Cargo.toml"
 python-source = "python"
-module-name = "pylean4._core"
+module-name = "pylean4._ai"
