@@ -11,7 +11,12 @@ from pathlib import Path
 
 from ._runtime import preload_lean_runtime
 
-preload_lean_runtime(Path(__file__).parent)
+if preload_lean_runtime(Path(__file__).parent) is None:
+    raise ImportError(
+        "Could not find a compatible external Lean runtime for pylean4. "
+        "Install Lean for runtime use, add lean or lemma to PATH, or set "
+        "LEAN_HOME/LEAN_LIB_DIR to a Lean installation that exports lean_mark_mt."
+    )
 
 # Re-export native types. The _ai extension registers both the core and AI
 # layers so Lean's process-global runtime is loaded only once.

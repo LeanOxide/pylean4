@@ -11,6 +11,7 @@ import subprocess
 from typing import Iterable
 
 
+REQUIRED_RUNTIME_SYMBOLS = ("lean_mark_mt",)
 _PRELOADED: list[ctypes.CDLL] = []
 _PRELOADED_RUNTIME: Path | None = None
 
@@ -35,6 +36,8 @@ def preload_lean_runtime(extension_dir: Path | None = None) -> Path | None:
         except OSError:
             continue
         if handles:
+            if not _has_required_symbols(handles):
+                continue
             _PRELOADED.extend(handles)
             _PRELOADED_RUNTIME = _primary_runtime_path(lib_paths)
             return _PRELOADED_RUNTIME
@@ -68,6 +71,7 @@ def iter_lean_library_dirs() -> Iterable[Path]:
     yield from _lean_prefix_command_dirs(seen)
     yield from _lake_env_dirs(seen)
     yield from _elan_toolchain_dirs(seen)
+    yield from _lemma_toolchain_dirs(seen)
 
 
 def _load_runtime_libraries(lib_paths: list[Path]) -> list[ctypes.CDLL]:
@@ -99,8 +103,15 @@ def _load_shared_library(lib_path: Path) -> ctypes.CDLL:
         os.add_dll_directory(str(lib_path.parent))
         return ctypes.CDLL(str(lib_path))
 
-    mode = getattr(ctypes, "RTLD_GLOBAL", 0)
+    mode = getattr(ctypes, "RTLD_GLOBAL", 0) | getattr(os, "RTLD_NOW", 0)
     return ctypes.CDLL(str(lib_path), mode=mode)
+
+
+def _has_required_symbols(handles: list[ctypes.CDLL]) -> bool:
+    for symbol in REQUIRED_RUNTIME_SYMBOLS:
+        if not any(hasattr(handle, symbol) for handle in handles):
+            return False
+    return True
 
 
 def _shared_library_name() -> str:
@@ -165,6 +176,7 @@ def _lean_prefix_command_dirs(seen: set[Path]) -> Iterable[Path]:
     candidates = [
         os.environ.get("LEAN"),
         shutil.which("lean"),
+        str(Path.home() / ".lemma" / "bin" / _exe("lean")),
         str(Path.home() / ".elan" / "bin" / _exe("lean")),
     ]
     for command in candidates:
@@ -196,6 +208,26 @@ def _elan_toolchain_dirs(seen: set[Path]) -> Iterable[Path]:
     )
     for entry in entries:
         yield from _once(seen, entry / "lib" / "lean")
+
+
+def _lemma_toolchain_dirs(seen: set[Path]) -> Iterable[Path]:
+    roots = [Path.home() / ".lemma"]
+    lemma_home = os.environ.get("LEMMA_HOME")
+    if lemma_home:
+        roots.insert(0, Path(lemma_home))
+
+    for root in roots:
+        toolchains = root / "toolchains"
+        if not toolchains.is_dir():
+            continue
+
+        entries = sorted(
+            (entry for entry in toolchains.iterdir() if entry.is_dir()),
+            key=lambda entry: entry.stat().st_mtime,
+            reverse=True,
+        )
+        for entry in entries:
+            yield from _once(seen, entry / "lib" / "lean")
 
 
 def _run_stdout(command: list[str]) -> str | None:

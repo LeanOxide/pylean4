@@ -15,6 +15,3 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 leo3.workspace = true
 pyo3.workspace = true
-
-[build-dependencies]
-leo3-build-config.workspace = true

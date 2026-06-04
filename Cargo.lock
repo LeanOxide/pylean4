@@ -148,7 +148,6 @@ name = "pylean4-ai"
 version = "0.1.0"
 dependencies = [
  "leo3",
- "leo3-build-config",
  "pylean4-core",
  "pyo3",
  "rayon",
@@ -159,7 +158,6 @@ name = "pylean4-core"
 version = "0.1.0"
 dependencies = [
  "leo3",
- "leo3-build-config",
  "pyo3",
 ]
 

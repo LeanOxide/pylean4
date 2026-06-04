@@ -18,8 +18,5 @@ leo3 = { workspace = true, features = ["tokio"] }
 pyo3.workspace = true
 rayon = "1.10"
 
-[build-dependencies]
-leo3-build-config.workspace = true
-
 [dev-dependencies]
 pyo3 = { version = "0.23", features = ["auto-initialize"] }
